@@ -27,7 +27,6 @@ public class OpportunityTriggerHandler extends TriggerHandler{
     }
 
     public override void afterUndelete() {
-        System.debug('Entered the trigger handler after undelete opportunities with size : ' + Trigger.newMap.size());
         new OpportunityHelper().assignPrimaryContact(Trigger.newMap);
     }
 

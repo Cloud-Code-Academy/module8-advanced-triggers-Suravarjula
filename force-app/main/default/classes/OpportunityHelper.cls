@@ -14,8 +14,6 @@ public with sharing class OpportunityHelper {
     public void preventClosedOppDeletion(Map<Id, SObject> oppMap) {
         Set<Id> oppIds = oppMap.keySet();
         Set<Id> bankingAccountIds = getOpportunityAccountsForIndustry(oppIds, 'Banking');
-        System.debug('# of opportunities to be deleted : ' + oppMap.size());
-        System.debug('# of banking account ids : ' + bankingAccountIds.size());
 
         for(Opportunity opp : (List<Opportunity>)oppMap.values()) {
             if(opp.isClosed)  {
@@ -45,14 +43,6 @@ public with sharing class OpportunityHelper {
             }
         }
     }
-
-    // public void preventClosedOppDeletion(List<Opportunity> oppList) {
-    //     for(Opportunity opp : oppList) {
-    //         if(opp.isClosed) {
-    //             opp.addError('Cannot delete closed opportunity');
-    //         }
-    //     }
-    // }
 
     public void createOppTask(List<Opportunity> oppList) {
         List<Task> oppTaskList = new List<Task>();
@@ -101,7 +91,6 @@ public with sharing class OpportunityHelper {
     }
 
     public void assignPrimaryContact(Map<Id, SObject> oppNewMap) {  
-        System.debug('Entered assign primary contact method post undelete operation with size : ' + oppNewMap.size());      
         Map<Id, Opportunity> oppMap = new Map<Id, Opportunity>();
         Set<Id> oppAccountIds = new Set<Id>();
         for(Opportunity opp : (List<Opportunity>)oppNewMap.values()) {
