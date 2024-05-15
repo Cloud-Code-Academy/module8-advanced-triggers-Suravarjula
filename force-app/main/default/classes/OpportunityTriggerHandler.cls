@@ -27,7 +27,7 @@ public class OpportunityTriggerHandler extends TriggerHandler{
     }
 
     public override void afterUndelete() {
-        new OpportunityHelper().assignPrimaryContact(Trigger.newMap);
+        new OpportunityHelper().assignPrimaryContact(Trigger.new);
     }
 
 }

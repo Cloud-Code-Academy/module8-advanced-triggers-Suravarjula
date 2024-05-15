@@ -32,7 +32,9 @@ public with sharing class OpportunityHelper {
         List<Opportunity> oppList = (List<Opportunity>)oppMap.values();
         Map<Id, Id> ceoContactByAccount = getCEOContactForAccount(oppIds);
         for(Opportunity opp : oppList) {
-            opp.Primary_Contact__c = ceoContactByAccount.get(opp.AccountId);
+            if(opp.Primary_Contact__c == null && ceoContactByAccount.get(opp.AccountId) != null) {
+                opp.Primary_Contact__c = ceoContactByAccount.get(opp.AccountId);
+            }
         }
     }
 
@@ -73,7 +75,7 @@ public with sharing class OpportunityHelper {
             oppId.add(opp.OwnerId);
         }
         Map<Id, User> ownerEmailIdMap = new Map<Id, User>([SELECT Id, Email FROM User WHERE Id IN :oppId]);
-
+        
         for (Opportunity opp : opps){
             Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
             String[] toAddresses = new String[] {ownerEmailIdMap.get(opp.OwnerId).Email};
@@ -90,22 +92,45 @@ public with sharing class OpportunityHelper {
         }
     }
 
-    public void assignPrimaryContact(Map<Id, SObject> oppNewMap) {  
-        Map<Id, Opportunity> oppMap = new Map<Id, Opportunity>();
+    public void assignPrimaryContact(List<SObject> undeleteOppList) {  
+        List<Opportunity> oppListToUpdate = new List<Opportunity>();
         Set<Id> oppAccountIds = new Set<Id>();
-        for(Opportunity opp : (List<Opportunity>)oppNewMap.values()) {
+        for(Opportunity opp : (List<Opportunity>)undeleteOppList) {
             oppAccountIds.add(opp.AccountId);
         }
         Map<Id, Account> primaryContactByAccountId = new Map<Id, Account>([SELECT Id, (SELECT Id from Contacts WHERE Title = 'VP Sales') from Account where Id IN :oppAccountIds]);
-
-        for (Opportunity opp : (List<Opportunity>)oppNewMap.values()){            
+        System.debug('primaryContactByAccountId : ' + primaryContactByAccountId);
+        System.debug('primaryContact : ' + primaryContactByAccountId.values().get(0).Contacts);
+        //System.debug('primaryContactByAccountId Map Size : ' + primaryContactByAccountId.size());
+        for (Opportunity opp : (List<Opportunity>)undeleteOppList){            
             if (opp.Primary_Contact__c == null){
-                Opportunity oppToUpdate = new Opportunity(Id = opp.Id);
-                oppToUpdate.Primary_Contact__c = primaryContactByAccountId.get(opp.AccountId).Contacts.get(0).Id;
-                oppMap.put(opp.Id, oppToUpdate);
+                Opportunity oppToUpdate = new Opportunity(Id = opp.Id, Name = opp.Name,
+                                                            StageName = opp.StageName,
+                                                            CloseDate = opp.CloseDate,
+                                                            AccountId = opp.AccountId,
+                                                            Primary_Contact__c = primaryContactByAccountId.get(opp.AccountId).Contacts.get(0).Id);
+              //  System.debug('Primary_Contact__c is : ' + opp.Primary_Contact__c + ' and Contact Id : ' + primaryContactByAccountId.get(opp.AccountId).Contacts.get(0).Id);
+             // oppToUpdate.Primary_Contact__c = primaryContactByAccountId.get(opp.AccountId).Contacts.get(0).Id;
+              //  System.debug(oppToUpdate);
+              oppListToUpdate.add(oppToUpdate);
             }
         }
-        update oppMap.values();
+        Database.saveResult[] updateResult = Database.update(oppListToUpdate);
+        // System.debug('Update Result : ' + updateResult.size());
+        for (Database.SaveResult sr : updateResult) {
+            if (sr.isSuccess()) {
+                // Operation was successful, so get the ID of the record that was processed
+                System.debug('Successfully updated Opportunity : ' + sr);
+            }
+            else {
+                // Operation failed, so get all errors                
+                for(Database.Error err : sr.getErrors()) {
+                    System.debug('The following error has occurred.');                    
+                    System.debug(err.getStatusCode() + ': ' + err.getMessage());
+                    System.debug('Account fields that affected this error: ' + err.getFields());
+                }
+            }
+        }
     }
     
     private Set<Id> getOpportunityAccountsForIndustry(Set<Id> opportunityIds, String industry) {
