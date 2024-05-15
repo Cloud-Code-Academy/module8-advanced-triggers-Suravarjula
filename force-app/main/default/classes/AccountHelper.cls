@@ -27,13 +27,10 @@ Remember:
 Always ensure that your helper methods are bulk-safe to handle multiple records efficiently. 
 */
 public with sharing class AccountHelper {
-    List<Account> accountList;
 
     public void setTypeProspect(List<SObject> objects){
-        accountList = (List<Account>)objects;
-
         /* This if condition sets Account Type as 'Prospect' for all accounts whose Type is not specified during inserting the record */        
-        for(Account acctRec : accountList){
+        for(Account acctRec : (List<Account>)objects){
             if(String.isBlank(acctRec.type)) {
                 acctRec.type = 'Prospect';
             }
@@ -42,10 +39,8 @@ public with sharing class AccountHelper {
     }
 
     public void addressCopy(List<SObject> objects){
-        accountList = (List<Account>)objects;
-
         /* This if condition copies Shipping Address to Billing Address when all fields of Shipping Address are not NULL */
-        for(Account acctRec : accountList){
+        for(Account acctRec : (List<Account>)objects){
             if(!String.isBlank(acctRec.ShippingStreet) && !String.isBlank(acctRec.ShippingCity) && !String.isBlank(acctRec.ShippingState) 
                 && !String.isBlank(acctRec.ShippingPostalCode) && !String.isBlank(acctRec.ShippingCountry)) {
                     acctRec.BillingStreet = acctRec.ShippingStreet;
@@ -58,9 +53,8 @@ public with sharing class AccountHelper {
     }
 
     public void setRating (List<SObject> objects) {
-        accountList = (List<Account>)objects;
         /* This if condition sets Account Rating to 'Hot' when Phone, Website, Fax are not NULL */
-        for(Account acctRec : accountList){
+        for(Account acctRec : (List<Account>)objects){
             if(!String.isBlank(acctRec.Phone) && !String.isBlank(acctRec.WebSite) && !String.isBlank(acctRec.Fax)){
                 acctRec.Rating = 'Hot';
             }

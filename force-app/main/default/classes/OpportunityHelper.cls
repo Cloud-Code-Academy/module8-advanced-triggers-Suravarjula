@@ -99,38 +99,14 @@ public with sharing class OpportunityHelper {
             oppAccountIds.add(opp.AccountId);
         }
         Map<Id, Account> primaryContactByAccountId = new Map<Id, Account>([SELECT Id, (SELECT Id from Contacts WHERE Title = 'VP Sales') from Account where Id IN :oppAccountIds]);
-        System.debug('primaryContactByAccountId : ' + primaryContactByAccountId);
-        System.debug('primaryContact : ' + primaryContactByAccountId.values().get(0).Contacts);
-        //System.debug('primaryContactByAccountId Map Size : ' + primaryContactByAccountId.size());
         for (Opportunity opp : (List<Opportunity>)undeleteOppList){            
             if (opp.Primary_Contact__c == null){
-                Opportunity oppToUpdate = new Opportunity(Id = opp.Id, Name = opp.Name,
-                                                            StageName = opp.StageName,
-                                                            CloseDate = opp.CloseDate,
-                                                            AccountId = opp.AccountId,
-                                                            Primary_Contact__c = primaryContactByAccountId.get(opp.AccountId).Contacts.get(0).Id);
-              //  System.debug('Primary_Contact__c is : ' + opp.Primary_Contact__c + ' and Contact Id : ' + primaryContactByAccountId.get(opp.AccountId).Contacts.get(0).Id);
-             // oppToUpdate.Primary_Contact__c = primaryContactByAccountId.get(opp.AccountId).Contacts.get(0).Id;
-              //  System.debug(oppToUpdate);
-              oppListToUpdate.add(oppToUpdate);
+                Opportunity oppToUpdate = new Opportunity(Id = opp.Id);
+                oppToUpdate.Primary_Contact__c = primaryContactByAccountId.get(opp.AccountId).Contacts.get(0).Id;
+                oppListToUpdate.add(oppToUpdate);
             }
         }
-        Database.saveResult[] updateResult = Database.update(oppListToUpdate);
-        // System.debug('Update Result : ' + updateResult.size());
-        for (Database.SaveResult sr : updateResult) {
-            if (sr.isSuccess()) {
-                // Operation was successful, so get the ID of the record that was processed
-                System.debug('Successfully updated Opportunity : ' + sr);
-            }
-            else {
-                // Operation failed, so get all errors                
-                for(Database.Error err : sr.getErrors()) {
-                    System.debug('The following error has occurred.');                    
-                    System.debug(err.getStatusCode() + ': ' + err.getMessage());
-                    System.debug('Account fields that affected this error: ' + err.getFields());
-                }
-            }
-        }
+        Database.update(oppListToUpdate);
     }
     
     private Set<Id> getOpportunityAccountsForIndustry(Set<Id> opportunityIds, String industry) {
