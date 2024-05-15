@@ -27,20 +27,48 @@ Remember:
 Always ensure that your helper methods are bulk-safe to handle multiple records efficiently. 
 */
 public with sharing class AccountHelper {
-    
-    public void setTypeProspect(SObject objects){
+
+    public void setTypeProspect(List<SObject> objects){
+        /* This if condition sets Account Type as 'Prospect' for all accounts whose Type is not specified during inserting the record */        
+        for(Account acctRec : (List<Account>)objects){
+            if(String.isBlank(acctRec.type)) {
+                acctRec.type = 'Prospect';
+            }
+        }
 
     }
 
-    void addressCopy(){
-
+    public void addressCopy(List<SObject> objects){
+        /* This if condition copies Shipping Address to Billing Address when all fields of Shipping Address are not NULL */
+        for(Account acctRec : (List<Account>)objects){
+            if(!String.isBlank(acctRec.ShippingStreet) && !String.isBlank(acctRec.ShippingCity) && !String.isBlank(acctRec.ShippingState) 
+                && !String.isBlank(acctRec.ShippingPostalCode) && !String.isBlank(acctRec.ShippingCountry)) {
+                    acctRec.BillingStreet = acctRec.ShippingStreet;
+                    acctRec.BillingCity = acctRec.ShippingCity;
+                    acctRec.BillingState = acctRec.ShippingState;
+                    acctRec.BillingPostalCode = acctRec.ShippingPostalCode;
+                    acctRec.BillingCountry = acctRec.ShippingCountry;
+            }
+        }
     }
 
-    //[public | private ] [static] data_type setRating (input parameters) {
-    //  The body of the method
-    //}
+    public void setRating (List<SObject> objects) {
+        /* This if condition sets Account Rating to 'Hot' when Phone, Website, Fax are not NULL */
+        for(Account acctRec : (List<Account>)objects){
+            if(!String.isBlank(acctRec.Phone) && !String.isBlank(acctRec.WebSite) && !String.isBlank(acctRec.Fax)){
+                acctRec.Rating = 'Hot';
+            }
+        }
+    }
 
-    //[public | private ] [static] data_type defaultContact (input parameters) {
-    //  The body of the method
-    //}
+    public  void defaultContact (Set<Id> accountIds) {
+        List<Contact> defContactList = new List<Contact>();
+        for(Id acctId : accountIds) {
+            Contact defContactRec = new Contact(LastName = 'DefaultContact', Email = 'default@email.com', AccountId = acctId);
+            defContactList.add(defContactRec);
+        }
+        Database.DMLOptions dml = new Database.DMLOptions();
+        dml.DuplicateRuleHeader.AllowSave = true;
+        Database.insert(defContactList, dml);
+    }
 }
